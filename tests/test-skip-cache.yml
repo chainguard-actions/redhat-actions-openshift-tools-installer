@@ -1,0 +1,30 @@
+name: Test skip_cache input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          skip_cache: "true"
+          oc: latest
+      - name: Assert installed output is valid JSON
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "$INSTALLED" | python3 -c "import sys, json; json.load(sys.stdin)" || (echo "FAIL: installed output is not valid JSON" && exit 1)
+          echo "PASS: installed output is valid JSON"
+      - name: Assert oc is installed
+        run: |
+          which oc || (echo "FAIL: oc not found in PATH" && exit 1)
+          echo "oc version: $(oc version --client 2>&1 || true)"
+          echo "PASS"

@@ -1,0 +1,40 @@
+name: Test basic tools installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          oc: latest
+          helm: latest
+          kustomize: latest
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert oc is installed
+        run: |
+          which oc || (echo "FAIL: oc not found in PATH" && exit 1)
+          echo "oc version: $(oc version --client 2>&1 || true)"
+          echo "PASS"
+      - name: Assert helm is installed
+        run: |
+          which helm || (echo "FAIL: helm not found in PATH" && exit 1)
+          echo "helm version: $(helm version --short 2>&1 || true)"
+          echo "PASS"
+      - name: Assert kustomize is installed
+        run: |
+          which kustomize || (echo "FAIL: kustomize not found in PATH" && exit 1)
+          echo "kustomize version: $(kustomize version 2>&1 || true)"
+          echo "PASS"

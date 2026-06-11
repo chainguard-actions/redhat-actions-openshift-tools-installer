@@ -1,0 +1,64 @@
+name: Test additional tools installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          chart-verifier: latest
+          preflight: latest
+          kam: latest
+          kamel: latest
+          crc: latest
+          crda: latest
+          openshift-install: latest
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert chart-verifier is installed
+        run: |
+          which chart-verifier || (echo "FAIL: chart-verifier not found in PATH" && exit 1)
+          echo "chart-verifier version: $(chart-verifier version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert preflight is installed
+        run: |
+          which preflight || (echo "FAIL: preflight not found in PATH" && exit 1)
+          echo "preflight version: $(preflight version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert kam is installed
+        run: |
+          which kam || (echo "FAIL: kam not found in PATH" && exit 1)
+          echo "kam version: $(kam version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert kamel is installed
+        run: |
+          which kamel || (echo "FAIL: kamel not found in PATH" && exit 1)
+          echo "kamel version: $(kamel version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert crc is installed
+        run: |
+          which crc || (echo "FAIL: crc not found in PATH" && exit 1)
+          echo "crc version: $(crc version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert crda is installed
+        run: |
+          which crda || (echo "FAIL: crda not found in PATH" && exit 1)
+          echo "crda version: $(crda version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert openshift-install is installed
+        run: |
+          which openshift-install || (echo "FAIL: openshift-install not found in PATH" && exit 1)
+          echo "openshift-install version: $(openshift-install version 2>&1 || true)"
+          echo "PASS"

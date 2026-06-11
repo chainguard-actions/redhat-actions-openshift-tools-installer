@@ -1,0 +1,46 @@
+name: Test pipeline and serverless tools installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          tkn: latest
+          kn: latest
+          yq: latest
+          odo: latest
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tkn is installed
+        run: |
+          which tkn || (echo "FAIL: tkn not found in PATH" && exit 1)
+          echo "tkn version: $(tkn version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert kn is installed
+        run: |
+          which kn || (echo "FAIL: kn not found in PATH" && exit 1)
+          echo "kn version: $(kn version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert yq is installed
+        run: |
+          which yq || (echo "FAIL: yq not found in PATH" && exit 1)
+          echo "yq version: $(yq --version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert odo is installed
+        run: |
+          which odo || (echo "FAIL: odo not found in PATH" && exit 1)
+          echo "odo version: $(odo version 2>&1 || true)"
+          echo "PASS"

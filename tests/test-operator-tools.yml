@@ -1,0 +1,46 @@
+name: Test operator and build tools installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          opm: latest
+          operator-sdk: latest
+          s2i: latest
+          ko: latest
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert opm is installed
+        run: |
+          which opm || (echo "FAIL: opm not found in PATH" && exit 1)
+          echo "opm version: $(opm version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert operator-sdk is installed
+        run: |
+          which operator-sdk || (echo "FAIL: operator-sdk not found in PATH" && exit 1)
+          echo "operator-sdk version: $(operator-sdk version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert s2i is installed
+        run: |
+          which s2i || (echo "FAIL: s2i not found in PATH" && exit 1)
+          echo "s2i version: $(s2i version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert ko is installed
+        run: |
+          which ko || (echo "FAIL: ko not found in PATH" && exit 1)
+          echo "ko version: $(ko version 2>&1 || true)"
+          echo "PASS"
