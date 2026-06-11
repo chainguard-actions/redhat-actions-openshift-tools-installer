@@ -1,0 +1,68 @@
+name: Test basic CLI tools (oc, helm, kustomize, yq, tkn)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          skip_cache: "true"
+          oc: "latest"
+          helm: "latest"
+          kustomize: "latest"
+          yq: "latest"
+          tkn: "latest"
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert oc is on PATH
+        run: |
+          if ! command -v oc &>/dev/null; then
+            echo "FAIL: oc not found on PATH"
+            exit 1
+          fi
+          echo "oc version: $(oc version --client 2>&1 || true)"
+          echo "PASS"
+      - name: Assert helm is on PATH
+        run: |
+          if ! command -v helm &>/dev/null; then
+            echo "FAIL: helm not found on PATH"
+            exit 1
+          fi
+          echo "helm version: $(helm version --short 2>&1 || true)"
+          echo "PASS"
+      - name: Assert kustomize is on PATH
+        run: |
+          if ! command -v kustomize &>/dev/null; then
+            echo "FAIL: kustomize not found on PATH"
+            exit 1
+          fi
+          echo "kustomize version: $(kustomize version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert yq is on PATH
+        run: |
+          if ! command -v yq &>/dev/null; then
+            echo "FAIL: yq not found on PATH"
+            exit 1
+          fi
+          echo "yq version: $(yq --version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert tkn is on PATH
+        run: |
+          if ! command -v tkn &>/dev/null; then
+            echo "FAIL: tkn not found on PATH"
+            exit 1
+          fi
+          echo "tkn version: $(tkn version 2>&1 || true)"
+          echo "PASS"

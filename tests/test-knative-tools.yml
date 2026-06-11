@@ -1,0 +1,68 @@
+name: Test knative and serverless tools (kn, ko, kamel, odo, s2i)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          skip_cache: "true"
+          kn: "latest"
+          ko: "latest"
+          kamel: "latest"
+          odo: "latest"
+          s2i: "latest"
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert kn is on PATH
+        run: |
+          if ! command -v kn &>/dev/null; then
+            echo "FAIL: kn not found on PATH"
+            exit 1
+          fi
+          echo "kn version: $(kn version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert ko is on PATH
+        run: |
+          if ! command -v ko &>/dev/null; then
+            echo "FAIL: ko not found on PATH"
+            exit 1
+          fi
+          echo "ko version: $(ko version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert kamel is on PATH
+        run: |
+          if ! command -v kamel &>/dev/null; then
+            echo "FAIL: kamel not found on PATH"
+            exit 1
+          fi
+          echo "kamel version: $(kamel version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert odo is on PATH
+        run: |
+          if ! command -v odo &>/dev/null; then
+            echo "FAIL: odo not found on PATH"
+            exit 1
+          fi
+          echo "odo version: $(odo version 2>&1 || true)"
+          echo "PASS"
+      - name: Assert s2i is on PATH
+        run: |
+          if ! command -v s2i &>/dev/null; then
+            echo "FAIL: s2i not found on PATH"
+            exit 1
+          fi
+          echo "s2i version: $(s2i version 2>&1 || true)"
+          echo "PASS"
