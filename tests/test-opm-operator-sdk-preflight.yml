@@ -1,0 +1,49 @@
+name: Test opm, operator-sdk, and preflight install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          opm: "latest"
+          operator-sdk: "latest"
+          preflight: "latest"
+          source: mirror
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert opm is on PATH
+        run: |
+          if ! command -v opm &>/dev/null; then
+            echo "FAIL: opm not found on PATH"
+            exit 1
+          fi
+          echo "opm version: $(opm version)"
+          echo "PASS"
+      - name: Assert operator-sdk is on PATH
+        run: |
+          if ! command -v operator-sdk &>/dev/null; then
+            echo "FAIL: operator-sdk not found on PATH"
+            exit 1
+          fi
+          echo "operator-sdk version: $(operator-sdk version)"
+          echo "PASS"
+      - name: Assert preflight is on PATH
+        run: |
+          if ! command -v preflight &>/dev/null; then
+            echo "FAIL: preflight not found on PATH"
+            exit 1
+          fi
+          echo "preflight version: $(preflight version)"
+          echo "PASS"

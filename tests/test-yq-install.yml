@@ -1,0 +1,42 @@
+name: Test yq install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: github
+          yq: "latest"
+      - name: Assert installed output contains yq
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          if ! echo "$INSTALLED" | grep -qi "yq"; then
+            echo "FAIL: installed output does not mention yq"
+            exit 1
+          fi
+          echo "PASS: installed output contains yq"
+      - name: Assert yq binary is on PATH and functional
+        run: |
+          if ! command -v yq &>/dev/null; then
+            echo "FAIL: yq not found on PATH"
+            exit 1
+          fi
+          echo "yq version: $(yq --version 2>&1 || true)"
+          # Test yq can parse YAML
+          RESULT=$(echo "key: value" | yq '.key' 2>&1 || true)
+          echo "yq parse result: $RESULT"
+          if [ "$RESULT" != "value" ]; then
+            echo "FAIL: yq did not parse YAML correctly, got: $RESULT"
+            exit 1
+          fi
+          echo "PASS: yq is available and functional"

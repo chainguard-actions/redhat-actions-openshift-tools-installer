@@ -1,0 +1,44 @@
+name: Test install from GitHub source
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: github
+          github_pat: ${{ github.token }}
+          skip_cache: "true"
+          kn: "latest"
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: 'installed' output is empty"
+            exit 1
+          fi
+          echo "PASS: installed output is set"
+      - name: Assert kn binary is available
+        run: |
+          echo "Checking kn binary..."
+          if ! command -v kn &>/dev/null; then
+            echo "FAIL: kn binary not found in PATH"
+            exit 1
+          fi
+          kn version
+          echo "PASS: kn binary is available"
+      - name: Assert installed output contains kn
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if ! echo "$INSTALLED" | grep -q '"kn"'; then
+            echo "FAIL: installed output does not mention 'kn'"
+            exit 1
+          fi
+          echo "PASS: installed output contains kn"

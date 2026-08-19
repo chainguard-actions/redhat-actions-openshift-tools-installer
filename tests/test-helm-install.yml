@@ -1,0 +1,35 @@
+name: Test helm install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          helm: "latest"
+      - name: Assert installed output contains helm
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          if ! echo "$INSTALLED" | grep -qi "helm"; then
+            echo "FAIL: installed output does not mention helm"
+            exit 1
+          fi
+          echo "PASS: installed output contains helm"
+      - name: Assert helm binary is on PATH
+        run: |
+          if ! command -v helm &>/dev/null; then
+            echo "FAIL: helm not found on PATH"
+            exit 1
+          fi
+          echo "helm version: $(helm version --short 2>&1 || true)"
+          echo "PASS: helm is available"
