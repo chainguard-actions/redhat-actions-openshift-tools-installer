@@ -1,18 +1,17 @@
-name: Test skip cache option
+name: Test multiple tools installation
 on:
   workflow_dispatch:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      CLI_INSTALLER_SKIP_CACHE: "true"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - id: action
         uses: .
         with:
+          oc: "latest"
+          kn: "latest"
           source: mirror
-          oc: latest
           skip_cache: "true"
       - name: Assert installed output is set
         env:
@@ -26,20 +25,15 @@ jobs:
           echo "PASS: installed output is set"
       - name: Assert oc is on PATH
         run: |
-          echo "Checking oc is available..."
-          if ! command -v oc &>/dev/null; then
+          if ! command -v oc > /dev/null 2>&1; then
             echo "FAIL: oc not found on PATH"
             exit 1
           fi
-          echo "oc version: $(oc version --client 2>&1 || true)"
-          echo "PASS: oc is available"
-      - name: Assert installed JSON contains oc
-        env:
-          INSTALLED: ${{ steps.action.outputs.installed }}
+          echo "PASS: oc is installed"
+      - name: Assert kn is on PATH
         run: |
-          echo "installed JSON: $INSTALLED"
-          if ! echo "$INSTALLED" | grep -q '"oc"'; then
-            echo "FAIL: installed output does not mention oc"
+          if ! command -v kn > /dev/null 2>&1; then
+            echo "FAIL: kn not found on PATH"
             exit 1
           fi
-          echo "PASS: installed output contains oc"
+          echo "PASS: kn is installed"

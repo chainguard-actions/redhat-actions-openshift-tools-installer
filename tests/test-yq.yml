@@ -1,4 +1,4 @@
-name: Test skip cache option
+name: Test yq installation
 on:
   workflow_dispatch:
 jobs:
@@ -11,8 +11,9 @@ jobs:
       - id: action
         uses: .
         with:
-          source: mirror
-          oc: latest
+          source: github
+          github_pat: ${{ github.token }}
+          yq: latest
           skip_cache: "true"
       - name: Assert installed output is set
         env:
@@ -24,22 +25,22 @@ jobs:
             exit 1
           fi
           echo "PASS: installed output is set"
-      - name: Assert oc is on PATH
+      - name: Assert yq is on PATH
         run: |
-          echo "Checking oc is available..."
-          if ! command -v oc &>/dev/null; then
-            echo "FAIL: oc not found on PATH"
+          echo "Checking yq is available..."
+          if ! command -v yq &>/dev/null; then
+            echo "FAIL: yq not found on PATH"
             exit 1
           fi
-          echo "oc version: $(oc version --client 2>&1 || true)"
-          echo "PASS: oc is available"
-      - name: Assert installed JSON contains oc
+          echo "yq version: $(yq --version 2>&1 || true)"
+          echo "PASS: yq is available"
+      - name: Assert installed JSON contains yq
         env:
           INSTALLED: ${{ steps.action.outputs.installed }}
         run: |
           echo "installed JSON: $INSTALLED"
-          if ! echo "$INSTALLED" | grep -q '"oc"'; then
-            echo "FAIL: installed output does not mention oc"
+          if ! echo "$INSTALLED" | grep -q '"yq"'; then
+            echo "FAIL: installed output does not mention yq"
             exit 1
           fi
-          echo "PASS: installed output contains oc"
+          echo "PASS: installed output contains yq"

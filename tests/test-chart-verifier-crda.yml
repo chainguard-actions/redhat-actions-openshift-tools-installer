@@ -1,0 +1,39 @@
+name: Test chart-verifier and crda install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          chart-verifier: latest
+          crda: latest
+          skip_cache: "true"
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert chart-verifier is on PATH
+        run: |
+          if ! command -v chart-verifier >/dev/null 2>&1; then
+            echo "FAIL: chart-verifier not found on PATH"
+            exit 1
+          fi
+          echo "PASS: chart-verifier found at $(command -v chart-verifier)"
+      - name: Assert crda is on PATH
+        run: |
+          if ! command -v crda >/dev/null 2>&1; then
+            echo "FAIL: crda not found on PATH"
+            exit 1
+          fi
+          echo "PASS: crda found at $(command -v crda)"

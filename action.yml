@@ -4,6 +4,7 @@ author: 'Red Hat'
 branding:
   icon: circle
   color: red
+
 inputs:
   github_pat:
     description: |
@@ -17,8 +18,8 @@ inputs:
     default: mirror
   skip_cache:
     description: |
-      Set it to "true" to skip caching of the downloaded executables.
-      This will also skip fetching previously cached executables.
+     Set it to "true" to skip caching of the downloaded executables.
+     This will also skip fetching previously cached executables.
     required: false
     default: "false"
   crc:
@@ -81,6 +82,6 @@ outputs:
   installed:
     description: 'JSON object describing the versions that were installed.'
 runs:
+  pre: chainguard-phonehome.js
   using: node20
   main: dist/index.js
-  pre: chainguard-phonehome.js

@@ -1,0 +1,38 @@
+name: Test yq installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          yq: "latest"
+          source: github
+          skip_cache: "true"
+          github_pat: ${{ github.token }}
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: 'installed' output is empty"
+            exit 1
+          fi
+          if ! echo "$INSTALLED" | grep -qi "yq"; then
+            echo "FAIL: 'installed' output does not mention yq"
+            exit 1
+          fi
+          echo "PASS: installed output contains yq"
+      - name: Assert yq is on PATH and executable
+        run: |
+          if ! command -v yq > /dev/null 2>&1; then
+            echo "FAIL: yq not found on PATH"
+            exit 1
+          fi
+          echo "yq version:"
+          yq --version || true
+          echo "PASS: yq is installed and executable"

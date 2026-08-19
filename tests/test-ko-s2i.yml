@@ -1,0 +1,39 @@
+name: Test ko and s2i install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          ko: latest
+          s2i: latest
+          skip_cache: "true"
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert ko is on PATH
+        run: |
+          if ! command -v ko >/dev/null 2>&1; then
+            echo "FAIL: ko not found on PATH"
+            exit 1
+          fi
+          echo "PASS: ko found at $(command -v ko)"
+      - name: Assert s2i is on PATH
+        run: |
+          if ! command -v s2i >/dev/null 2>&1; then
+            echo "FAIL: s2i not found on PATH"
+            exit 1
+          fi
+          echo "PASS: s2i found at $(command -v s2i)"
