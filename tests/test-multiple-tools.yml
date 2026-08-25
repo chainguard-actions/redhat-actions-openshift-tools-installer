@@ -1,0 +1,42 @@
+name: Test multiple tools install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          oc: "latest"
+          helm: "latest"
+          source: mirror
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS: installed output is set"
+      - name: Assert oc is on PATH
+        run: |
+          echo "which oc: $(which oc || echo 'not found')"
+          if ! command -v oc &>/dev/null; then
+            echo "FAIL: oc not found on PATH"
+            exit 1
+          fi
+          echo "PASS: oc is installed"
+      - name: Assert helm is on PATH
+        run: |
+          echo "which helm: $(which helm || echo 'not found')"
+          if ! command -v helm &>/dev/null; then
+            echo "FAIL: helm not found on PATH"
+            exit 1
+          fi
+          HELM_VERSION=$(helm version --short 2>&1 || true)
+          echo "helm version: $HELM_VERSION"
+          echo "PASS: helm is installed"

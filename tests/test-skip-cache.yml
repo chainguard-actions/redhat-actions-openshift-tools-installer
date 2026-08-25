@@ -1,0 +1,32 @@
+name: Test skip cache option
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          oc: "latest"
+          source: mirror
+          skip_cache: "true"
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS: installed output is set"
+      - name: Assert oc is on PATH
+        run: |
+          echo "which oc: $(which oc || echo 'not found')"
+          if ! command -v oc &>/dev/null; then
+            echo "FAIL: oc not found on PATH"
+            exit 1
+          fi
+          echo "PASS: oc is installed even with skip_cache=true"

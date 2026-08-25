@@ -1,0 +1,23 @@
+name: Test ocm install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          ocm: latest
+          source: mirror
+      - name: Assert ocm is installed
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if ! command -v ocm &>/dev/null; then
+            echo "FAIL: ocm not found in PATH"
+            exit 1
+          fi
+          echo "PASS: ocm is installed"

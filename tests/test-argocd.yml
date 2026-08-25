@@ -1,0 +1,23 @@
+name: Test argocd install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          argocd: latest
+          source: mirror
+      - name: Assert argocd is installed
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if ! command -v argocd &>/dev/null; then
+            echo "FAIL: argocd not found in PATH"
+            exit 1
+          fi
+          echo "PASS: argocd is installed"

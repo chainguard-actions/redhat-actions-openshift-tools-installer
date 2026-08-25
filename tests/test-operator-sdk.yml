@@ -1,0 +1,23 @@
+name: Test operator-sdk install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          operator-sdk: latest
+          source: mirror
+      - name: Assert operator-sdk is installed
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if ! command -v operator-sdk &>/dev/null; then
+            echo "FAIL: operator-sdk not found in PATH"
+            exit 1
+          fi
+          echo "PASS: operator-sdk is installed"

@@ -1,0 +1,296 @@
+name: Install from Mirror Example
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  pull_request:
+  schedule:
+    - cron: '0 0 * * *'  # every day at midnight
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SOURCE: mirror
+
+jobs:
+  latest-version:
+    name: Latest version
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "windows-latest", "ubuntu-24.04" ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: ./
+        id: install_clients
+        with:
+          source: ${{ env.SOURCE }}
+          # crc: "latest"                    # Fails on macos for version above 1.27.0
+          helm: "latest"
+          kn: "latest"
+          oc: "latest"
+          opm: "latest"
+          # openshift-install: "latest"      # Not available on windows
+          tkn: "latest"
+
+      - name: Echo output of installer
+        if: always()
+        env:
+          INSTALLED: ${{ steps.install_clients.outputs.installed }}
+        run: echo "$INSTALLED"
+
+      - name: Run installed tools
+        shell: bash
+        run: |
+          set -x
+          helm version
+          kn version
+          oc version
+          opm version
+          tkn version || true
+
+  known-version:
+    name: Known version
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "windows-latest", "ubuntu-24.04" ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: ./
+        id: install_clients
+        with:
+          source: ${{ env.SOURCE }}
+          helm: "3.5"
+          kn: "0.15"
+          oc: "4"
+          opm: "4.6"
+          # openshift-install: "4.x"    # Not available on windows
+          tkn: "1.15"
+
+      - name: Echo output of installer
+        if: always()
+        env:
+          INSTALLED: ${{ steps.install_clients.outputs.installed }}
+        run: echo "$INSTALLED"
+
+      - name: Run installed tools
+        shell: bash
+        run: |
+          set -x
+          helm version
+          kn version
+          oc version
+          opm version
+          tkn version || true
+
+  latest-version-linux-macos:
+    name: Latest openshift-install on linux & macOS
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "macos-latest", "ubuntu-24.04" ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: ./
+        id: install_clients
+        with:
+          source: ${{ env.SOURCE }}
+          openshift-install: "latest"
+
+      - name: Echo output of installer
+        if: always()
+        env:
+          INSTALLED: ${{ steps.install_clients.outputs.installed }}
+        run: echo "$INSTALLED"
+
+      - name: Run installed tools
+        run: |
+          set -x
+          openshift-install version
+
+  known-version-linux-macos:
+    name: Known openshift-install on linux & macOS
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "macos-latest", "ubuntu-24.04" ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: ./
+        id: install_clients
+        with:
+          source: ${{ env.SOURCE }}
+          openshift-install: "4.x"
+
+      - name: Echo output of installer
+        if: always()
+        env:
+          INSTALLED: ${{ steps.install_clients.outputs.installed }}
+        run: echo "$INSTALLED"
+
+      - name: Run installed tools
+        run: |
+          set -x
+          openshift-install version
+
+  known-version-linux:
+    name: Known version only linux
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: ./
+        id: install_clients
+        with:
+          source: ${{ env.SOURCE }}
+          butane: "latest"
+          oc: "4"
+          opm: "4"             # Only available on linux
+
+      - name: Echo output of installer
+        if: always()
+        env:
+          INSTALLED: ${{ steps.install_clients.outputs.installed }}
+        run: echo "$INSTALLED"
+
+      - name: Run installed tools
+        run: |
+          set -x
+          butane --version
+          oc version
+          opm version
+
+  cgw-clients:
+    name: CGW mirror clients
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "windows-latest", "ubuntu-24.04" ]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install Helm 3 (v4 clients mirror)
+        uses: ./
+        id: install_helm3
+        with:
+          source: ${{ env.SOURCE }}
+          helm: "3"
+
+      - name: Verify Helm 3
+        shell: bash
+        run: |
+          set -x
+          helm version
+          helm version --short | grep -q "^v3\."
+
+      - name: Install Helm 4 (CGW mirror)
+        uses: ./
+        id: install_helm4
+        with:
+          source: ${{ env.SOURCE }}
+          helm: "4"
+
+      - name: Verify Helm 4
+        shell: bash
+        run: |
+          set -x
+          helm version
+          helm version --short | grep -q "^v4\."
+
+      - name: Install argocd (CGW mirror)
+        uses: ./
+        id: install_argocd
+        with:
+          source: ${{ env.SOURCE }}
+          argocd: "latest"
+
+      - name: Verify argocd
+        shell: bash
+        run: |
+          set -x
+          argocd version --client
+
+      - name: Install tkn (CGW mirror)
+        uses: ./
+        id: install_tkn
+        with:
+          source: ${{ env.SOURCE }}
+          tkn: "latest"
+
+      - name: Verify tkn
+        shell: bash
+        run: |
+          set -x
+          tkn version || true
+
+  latest-version-linux-arm64:
+    name: Latest OCP tools on linux arm64
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: ./
+        id: install_clients
+        with:
+          source: ${{ env.SOURCE }}
+          oc: "latest"
+          openshift-install: "latest"
+
+      - name: Echo output of installer
+        if: always()
+        env:
+          INSTALLED: ${{ steps.install_clients.outputs.installed }}
+        run: echo "$INSTALLED"
+
+      - name: Run installed tools
+        run: |
+          set -x
+          oc version
+          openshift-install version
+
+  latest-version-linux-windows:
+    name: Install CRC
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: ./
+        id: install_clients
+        with:
+          source: ${{ env.SOURCE }}
+          crc: "latest"
+
+      - name: Echo output of installer
+        if: always()
+        env:
+          INSTALLED: ${{ steps.install_clients.outputs.installed }}
+        run: echo "$INSTALLED"
+
+      - name: Run installed tools
+        shell: bash
+        run: |
+          set -x
+          crc version

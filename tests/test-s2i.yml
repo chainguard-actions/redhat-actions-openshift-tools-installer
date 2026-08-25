@@ -1,0 +1,23 @@
+name: Test s2i install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          s2i: latest
+          source: mirror
+      - name: Assert s2i is installed
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if ! command -v s2i &>/dev/null; then
+            echo "FAIL: s2i not found in PATH"
+            exit 1
+          fi
+          echo "PASS: s2i is installed"

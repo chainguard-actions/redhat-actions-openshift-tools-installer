@@ -1,0 +1,33 @@
+name: Test installed output JSON structure
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          oc: "latest"
+          source: mirror
+      - name: Assert installed output is valid JSON with oc entry
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          # Verify it is valid JSON
+          if ! echo "$INSTALLED" | python3 -c "import sys, json; data=json.load(sys.stdin); print('parsed ok')" 2>&1; then
+            echo "FAIL: installed output is not valid JSON"
+            exit 1
+          fi
+          # Verify oc is mentioned in the output
+          if ! echo "$INSTALLED" | grep -qi "oc"; then
+            echo "FAIL: installed output does not mention 'oc'"
+            exit 1
+          fi
+          echo "PASS: installed output is valid JSON and contains oc entry"
