@@ -1,0 +1,46 @@
+name: Test argocd, kn, and kustomize installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          argocd: "latest"
+          kn: "latest"
+          kustomize: "latest"
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS: installed output is set"
+      - name: Assert argocd is on PATH
+        run: |
+          if ! command -v argocd >/dev/null 2>&1; then
+            echo "FAIL: argocd not found on PATH"
+            exit 1
+          fi
+          echo "PASS: argocd found at $(command -v argocd)"
+      - name: Assert kn is on PATH
+        run: |
+          if ! command -v kn >/dev/null 2>&1; then
+            echo "FAIL: kn not found on PATH"
+            exit 1
+          fi
+          echo "PASS: kn found at $(command -v kn)"
+      - name: Assert kustomize is on PATH
+        run: |
+          if ! command -v kustomize >/dev/null 2>&1; then
+            echo "FAIL: kustomize not found on PATH"
+            exit 1
+          fi
+          echo "PASS: kustomize found at $(command -v kustomize)"

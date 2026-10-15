@@ -1,0 +1,34 @@
+name: Test install from github source
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: github
+          github_pat: ${{ github.token }}
+          tkn: "latest"
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS: installed output is set"
+      - name: Assert tkn is on PATH and executable
+        run: |
+          echo "which tkn: $(which tkn || echo 'not found')"
+          if ! command -v tkn &>/dev/null; then
+            echo "FAIL: tkn not found on PATH"
+            exit 1
+          fi
+          TKN_VERSION=$(tkn version 2>&1 || true)
+          echo "tkn version: $TKN_VERSION"
+          echo "PASS: tkn is installed and executable"

@@ -1,0 +1,38 @@
+name: Test butane and preflight installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          butane: "latest"
+          preflight: "latest"
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS: installed output is set"
+      - name: Assert butane is on PATH
+        run: |
+          if ! command -v butane >/dev/null 2>&1; then
+            echo "FAIL: butane not found on PATH"
+            exit 1
+          fi
+          echo "PASS: butane found at $(command -v butane)"
+      - name: Assert preflight is on PATH
+        run: |
+          if ! command -v preflight >/dev/null 2>&1; then
+            echo "FAIL: preflight not found on PATH"
+            exit 1
+          fi
+          echo "PASS: preflight found at $(command -v preflight)"

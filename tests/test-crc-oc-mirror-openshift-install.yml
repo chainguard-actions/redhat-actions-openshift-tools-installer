@@ -1,0 +1,46 @@
+name: Test crc, oc-mirror, and openshift-install installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          crc: "latest"
+          oc-mirror: "latest"
+          openshift-install: "latest"
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS: installed output is set"
+      - name: Assert crc is on PATH
+        run: |
+          if ! command -v crc >/dev/null 2>&1; then
+            echo "FAIL: crc not found on PATH"
+            exit 1
+          fi
+          echo "PASS: crc found at $(command -v crc)"
+      - name: Assert oc-mirror is on PATH
+        run: |
+          if ! command -v oc-mirror >/dev/null 2>&1; then
+            echo "FAIL: oc-mirror not found on PATH"
+            exit 1
+          fi
+          echo "PASS: oc-mirror found at $(command -v oc-mirror)"
+      - name: Assert openshift-install is on PATH
+        run: |
+          if ! command -v openshift-install >/dev/null 2>&1; then
+            echo "FAIL: openshift-install not found on PATH"
+            exit 1
+          fi
+          echo "PASS: openshift-install found at $(command -v openshift-install)"

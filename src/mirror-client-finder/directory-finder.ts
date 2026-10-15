@@ -1,0 +1,140 @@
+import * as ghCore from "@actions/core";
+import * as cheerio from "cheerio";
+import * as semver from "semver";
+import { Inputs } from "../generated/inputs-outputs";
+
+import { ClientDetailOverrides, ClientDirectory, InstallableClient } from "../util/types";
+import { assertOkStatus, getOS, HttpClient } from "../util/utils";
+import { findMatchingVersion } from "../util/version-utils";
+
+/**
+ * @returns The client directory for the maximum version of client that satisfies the desiredVersionRange range.
+ */
+export async function findClientDir(client: InstallableClient, desiredVersionRange: semver.Range):
+    Promise<ClientDirectory> {
+    const clientBaseDirs = resolveBaseDownloadDirs(client);
+    ghCore.info(`Download directories for ${client}: ${clientBaseDirs.join(", ")}`);
+
+    const versionToBaseDir = new Map<string, string>();
+    for (const baseDir of clientBaseDirs) {
+        try {
+            const versions = await getDirContents(baseDir);
+            for (const v of versions) {
+                if (!versionToBaseDir.has(v)) {
+                    versionToBaseDir.set(v, baseDir);
+                }
+            }
+        }
+        catch (err) {
+            ghCore.warning(`Failed to list versions from ${baseDir}: ${err}`);
+        }
+    }
+
+    const availableVersions = Array.from(versionToBaseDir.keys());
+    const clientMatchedVersion = await findMatchingVersion(
+        client, availableVersions, desiredVersionRange,
+        clientBaseDirs.join(", ")
+    );
+
+    const matchedBaseDir = versionToBaseDir.get(clientMatchedVersion) as string;
+    const clientVersionedDir = matchedBaseDir + clientMatchedVersion + "/";
+
+    if (client === Inputs.CRC && getOS() === "macos" && semver.gte(clientMatchedVersion, "1.28.0")) {
+        throw new Error(`❌ ${Inputs.CRC} ${clientMatchedVersion} cannot be installed on macOS. `
+        + `For details see https://github.com/redhat-actions/openshift-tools-installer/issues/39`);
+    }
+
+    return {
+        client,
+        version: clientMatchedVersion,
+        url: clientVersionedDir,
+    };
+}
+
+const BASE_URL_V4 = "https://mirror.openshift.com/pub/openshift-v4/clients/";
+function resolveBaseDownloadDirs(client: InstallableClient): string[] {
+    const clientDirOverride = ClientDetailOverrides[client]?.mirror?.directoryName;
+    const clientDir = clientDirOverride || client;
+
+    const primaryBaseUrl = ClientDetailOverrides[client]?.mirror?.baseUrl ?? BASE_URL_V4;
+    const dirs = [`${primaryBaseUrl + clientDir}/`];
+
+    const additionalBaseUrls = ClientDetailOverrides[client]?.mirror?.additionalBaseUrls;
+    if (additionalBaseUrls) {
+        for (const baseUrl of additionalBaseUrls) {
+            dirs.push(`${baseUrl + clientDir}/`);
+        }
+    }
+
+    return dirs;
+}
+
+export async function getDirContents(dirUrl: string): Promise<string[]> {
+    ghCore.debug(`GET ${dirUrl}`);
+
+    const directoryPageRes = await HttpClient.get(dirUrl, { Accept: "text/html" });
+    await assertOkStatus(directoryPageRes);
+    const directoryPage = await directoryPageRes.readBody();
+
+    const $ = cheerio.load(directoryPage);
+
+    const linkedFiles = $("td a").toArray().map((e) => {
+        // We have to use the href because the text sometimes gets cut off and suffixed with '...'
+        // not sure what causes this, since there's no screen size
+        let filename = $(e).attr("href");
+        if (!filename) {
+            const text = $(e).text();
+            ghCore.debug(`No href for element with text "${text}"`);
+            filename = text;
+        }
+        // in case of "crc" href is "https://mirror.openshift.com/pub/openshift-v4/clients/crc/1.25.0/"
+        // whereas in other cases it is only version i.e. "1.25.0"
+        // therefore handling this case separately
+        const filenameSplitted = filename.split("/");
+        if (filename.endsWith("/")) {
+            filename = filenameSplitted[filenameSplitted.length - 2];
+        }
+        else {
+            filename = filenameSplitted[filenameSplitted.length - 1];
+        }
+        return filename;
+    });
+
+    if (linkedFiles[0] === "Parent Directory" || linkedFiles[0].startsWith("/pub")) {
+        // remove link to parent directory
+        linkedFiles.shift();
+    }
+
+    return linkedFiles;
+}
+
+/**
+ * Resolves the actual download URL for a file in a mirror directory.
+ * Mirror directory listings may use absolute URLs in href attributes that point
+ * to different hosts, so we can't just concatenate dirUrl + fileName.
+ */
+export async function getFileURL(dirUrl: string, fileName: string): Promise<string> {
+    ghCore.debug(`GET ${dirUrl}`);
+
+    const directoryPageRes = await HttpClient.get(dirUrl, { Accept: "text/html" });
+    await assertOkStatus(directoryPageRes);
+    const directoryPage = await directoryPageRes.readBody();
+
+    const $ = cheerio.load(directoryPage);
+
+    for (const e of $("td a").toArray()) {
+        const href = $(e).attr("href");
+        if (!href) continue;
+
+        const hrefComponents = href.split("/");
+        const foundFilename = href.endsWith("/")
+            ? hrefComponents[hrefComponents.length - 2]
+            : hrefComponents[hrefComponents.length - 1];
+
+        if (fileName === foundFilename) {
+            return href.startsWith("http") ? href : `${dirUrl}${fileName}`;
+        }
+    }
+
+    return `${dirUrl}${fileName}`;
+}

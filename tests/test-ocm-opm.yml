@@ -1,0 +1,38 @@
+name: Test ocm and opm installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          ocm: "latest"
+          opm: "latest"
+      - name: Assert installed output is set
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          if [ -z "$INSTALLED" ]; then
+            echo "FAIL: installed output is empty"
+            exit 1
+          fi
+          echo "PASS: installed output is set"
+      - name: Assert ocm is on PATH
+        run: |
+          if ! command -v ocm >/dev/null 2>&1; then
+            echo "FAIL: ocm not found on PATH"
+            exit 1
+          fi
+          echo "PASS: ocm found at $(command -v ocm)"
+      - name: Assert opm is on PATH
+        run: |
+          if ! command -v opm >/dev/null 2>&1; then
+            echo "FAIL: opm not found on PATH"
+            exit 1
+          fi
+          echo "PASS: opm found at $(command -v opm)"
