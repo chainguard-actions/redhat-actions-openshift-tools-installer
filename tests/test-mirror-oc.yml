@@ -1,0 +1,39 @@
+name: Test install oc from mirror
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          source: mirror
+          skip_cache: "true"
+          oc: "4.14"
+      - name: Assert installed output describes oc 4.14.x
+        env:
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "installed: $INSTALLED"
+          node -e '
+            const o = JSON.parse(process.env.INSTALLED);
+            if (!o.oc) { console.log("FAIL: no oc key"); process.exit(1); }
+            if (!/^4\.14\.\d+/.test(o.oc.version)) { console.log("FAIL: bad version " + o.oc.version); process.exit(1); }
+            if (o.oc.fromCache !== false) { console.log("FAIL: expected fromCache false"); process.exit(1); }
+            if (!o.oc.installedPath) { console.log("FAIL: no installedPath"); process.exit(1); }
+            require("fs").writeFileSync("/tmp/oc-path", o.oc.installedPath);
+            console.log("PASS: oc " + o.oc.version);
+          '
+      - name: Assert oc is executable on PATH
+        run: |
+          P="$(cat /tmp/oc-path)"
+          echo "installedPath: $P"
+          if [ ! -x "$P" ]; then
+            echo "FAIL: $P is not an executable file"
+            exit 1
+          fi
+          oc version --client
+          oc version --client | grep -q "4.14" || { echo "FAIL: oc version mismatch"; exit 1; }
+          echo "PASS"

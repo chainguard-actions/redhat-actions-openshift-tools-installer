@@ -1,0 +1,38 @@
+name: Test GitHub-only clients are rejected from mirror
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          source: mirror
+          skip_cache: "true"
+          kamel: "latest"
+          ocm: "latest"
+          operator-sdk: "latest"
+          s2i: "latest"
+      - name: Assert action failed
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          INSTALLED: ${{ steps.action.outputs.installed }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "installed: $INSTALLED"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected failure since these clients are not on the mirror"
+            exit 1
+          fi
+          if [ -n "$INSTALLED" ]; then
+            echo "FAIL: expected no installed output"
+            exit 1
+          fi
+          if command -v kamel >/dev/null 2>&1 && [ "$(command -v kamel)" != "" ] && echo "$(command -v kamel)" | grep -q toolcache; then
+            echo "FAIL: kamel should not have been installed"
+            exit 1
+          fi
+          echo "PASS"
