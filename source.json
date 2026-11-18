@@ -4,8 +4,13 @@
   "version": "v3.3",
   "commit_sha": "bf1d8fd8fa963cff1d33688473e51f948748991e",
   "url": "https://github.com/redhat-actions/openshift-tools-installer",
-  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
   "test_agent_version": "2",
-  "harden_agent_version": "2"
+  "harden_agent_version": "2",
+  "dist_artifact": {
+    "gcs_uri": "gs://patch-actions-node-artifacts/dist-artifacts/redhat-actions/openshift-tools-installer/v3.3/sha256-74b577ddcad420b52760b26e3e6eb96eb5fe1fc42709c8aea9045b50f9ad4b58.tar.gz",
+    "sha256": "74b577ddcad420b52760b26e3e6eb96eb5fe1fc42709c8aea9045b50f9ad4b58",
+    "size_bytes": 2894403
+  }
 }
